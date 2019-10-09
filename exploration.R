@@ -2,6 +2,7 @@
 library(tidyverse)
 library(here)
 library(Hmisc)
+library(gghighlight)
 
 ipf_data <- readRDS(file = here::here('data', 'ipf_lifts.rds'))
 str(ipf_data)
@@ -184,3 +185,41 @@ ipf_data %>%
        subtitle = "Facetted by Sex and Exercise",
        x = "Year",
        y = "Median Value (kg)")
+
+## What if we mark years where no one was found to be doping in that respective exercise? ####
+sort(unique(ipf_data$place))
+plot1 <- ipf_data %>% 
+  mutate(yearDate = lubridate::year(date),
+         monthDate = lubridate::month(date),
+         indDoping = if_else(place == "DD", 1, 0)) %>% 
+  select(sex, meet_name, indDoping, yearDate, monthDate, best3bench_kg, best3deadlift_kg, best3squat_kg) %>% 
+  gather(exercise, value, -c(sex, meet_name, indDoping, yearDate, monthDate)) %>% 
+  mutate(exercise = case_when(exercise == "best3bench_kg" ~ "Bench Press",
+                              exercise == "best3deadlift_kg" ~ "Dead Lift",
+                              exercise == "best3squat_kg" ~ "Squat",
+                              TRUE ~ exercise)
+  ) %>% 
+  # group_by(sex, meet_name, yearDate, monthDate, exercise) %>% 
+  # group_by(sex, yearDate, monthDate, exercise) %>% 
+  group_by(sex, yearDate, exercise) %>% 
+  summarise(medValue = median(value, na.rm=TRUE),
+            meanValue = mean(value, na.rm=TRUE),
+            sdValue = sd(value, na.rm=TRUE),
+            numMeasurements = n(),
+            hasDoping = max(indDoping, na.rm=TRUE)
+  ) %>% 
+  ungroup() %>% 
+  arrange(exercise, yearDate) %>% # View()
+  # mutate(approxDate = as.Date(paste0(yearDate, "-", monthDate, "-", "01"), "%Y-%m-%d")) %>% # View()
+  ggplot(.) +
+  # geom_line(aes(yearDate, medValue, col = exercise)) +
+  geom_point(aes(yearDate, medValue, col = exercise)) +
+  # geom_smooth(aes(yearDate, medValue, col = exercise)) +
+  gghighlight(hasDoping == 0, use_direct_label = FALSE, use_facet_vars = TRUE) +
+  facet_grid(exercise~sex) +
+  labs(title = "Yearly Median (Clean) Performance Over Time",
+       subtitle = "Grey Points Include at Least 1 DQ Event for Doping",
+       x = "Year",
+       y = "Median Value (kg)") +
+  theme_bw()
+ggsave(filename = 'medPerfCheckDoping.png',path = here::here('plots'))
