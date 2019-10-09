@@ -5,4 +5,5 @@ Description of the data can be found at https://github.com/rfordatascience/tidyt
 This repo contains the following:
 
 - `readData.R`: ingests and explores the raw data.
+- `exploration.R`: follows different curiosities and sample plots
 
