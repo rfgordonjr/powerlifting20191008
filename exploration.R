@@ -1,6 +1,7 @@
 ## Explore powerlifting dataset. ####
 library(tidyverse)
 library(here)
+library(Hmisc)
 
 ipf_data <- readRDS(file = here::here('data', 'ipf_lifts.rds'))
 str(ipf_data)
@@ -91,3 +92,42 @@ ipf_data %>%
        subtitle = paste0(format(min(ipf_data$date), "%B %d, %Y"), " - ", format(max(ipf_data$date), "%B %d, %Y")),
        x = "Name",
        y = "Number of Events")  
+
+## Have average event numbers improved over time? ####
+ipf_data %>% 
+  mutate(yearDate = lubridate::year(date),
+         monthDate = lubridate::month(date)) %>% 
+  select(meet_name, yearDate, monthDate, best3bench_kg, best3deadlift_kg, best3squat_kg) %>% 
+  gather(exercise, value, -c(meet_name, yearDate, monthDate)) %>% 
+  # group_by(meet_name, yearDate, monthDate, exercise) %>% 
+  group_by(yearDate, monthDate, exercise) %>% 
+  summarise(medValue = median(value, na.rm=TRUE),
+            meanValue = mean(value, na.rm=TRUE),
+            sdValue = sd(value, na.rm=TRUE),
+            numMeasurements = n()
+            ) %>% 
+  ungroup() %>% 
+  arrange(exercise, yearDate, monthDate) %>% 
+  mutate(approxDate = as.Date(paste0(yearDate, "-", monthDate, "-", "01"), "%Y-%m-%d"))
+ipf_data %>% 
+  mutate(yearDate = lubridate::year(date),
+         monthDate = lubridate::month(date)) %>% 
+  select(meet_name, yearDate, monthDate, best3bench_kg, best3deadlift_kg, best3squat_kg) %>% 
+  gather(exercise, value, -c(meet_name, yearDate, monthDate)) %>% 
+  # group_by(meet_name, yearDate, monthDate, exercise) %>% 
+  group_by(yearDate, monthDate, exercise) %>% 
+  summarise(medValue = median(value, na.rm=TRUE),
+            meanValue = mean(value, na.rm=TRUE),
+            sdValue = sd(value, na.rm=TRUE),
+            numMeasurements = n()
+  ) %>% 
+  ungroup() %>% 
+  arrange(exercise, yearDate, monthDate) %>% 
+  mutate(approxDate = as.Date(paste0(yearDate, "-", monthDate, "-", "01"), "%Y-%m-%d")) %>% # describe()
+  ggplot(.) +
+  geom_line(aes(approxDate, medValue, col = exercise)) +
+  geom_point(aes(approxDate, medValue, col = exercise))
+
+## above plot probably shows lots of variance because of differences in sex ####
+  
+
