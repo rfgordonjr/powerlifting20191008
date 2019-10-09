@@ -33,5 +33,5 @@ ipf_data %>%
   arrange(desc(freq)) %>% 
   slice(1:20) %>% 
   ggplot(.) +
-  geom_bar(aes(name, freq), stat = "identity")
+  geom_bar(aes(reorder(name, -freq), freq), stat = "identity")
   
