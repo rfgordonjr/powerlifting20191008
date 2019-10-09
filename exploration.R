@@ -129,5 +129,58 @@ ipf_data %>%
   geom_point(aes(approxDate, medValue, col = exercise))
 
 ## above plot probably shows lots of variance because of differences in sex ####
-  
-
+ipf_data %>% 
+  mutate(yearDate = lubridate::year(date),
+         monthDate = lubridate::month(date)) %>% 
+  select(sex, meet_name, yearDate, monthDate, best3bench_kg, best3deadlift_kg, best3squat_kg) %>% 
+  gather(exercise, value, -c(sex, meet_name, yearDate, monthDate)) %>% 
+  # group_by(sex, meet_name, yearDate, monthDate, exercise) %>% 
+  group_by(sex, yearDate, monthDate, exercise) %>% 
+  summarise(medValue = median(value, na.rm=TRUE),
+            meanValue = mean(value, na.rm=TRUE),
+            sdValue = sd(value, na.rm=TRUE),
+            numMeasurements = n()
+  ) %>% 
+  ungroup() %>% 
+  arrange(exercise, yearDate, monthDate) %>% 
+  mutate(approxDate = as.Date(paste0(yearDate, "-", monthDate, "-", "01"), "%Y-%m-%d")) %>% # View()
+  ggplot(.) +
+  geom_line(aes(approxDate, medValue, col = exercise)) +
+  geom_point(aes(approxDate, medValue, col = exercise)) +
+  geom_smooth(aes(approxDate, medValue, col = exercise)) +
+  facet_grid(exercise~sex) +
+  labs(title = "Changes of Monthly Median Performance Over Time",
+       subtitle = "Facetted by Sex and Exercise",
+       x = "Month",
+       y = "Median Value")
+## Repeat by year ####
+ipf_data %>% 
+  mutate(yearDate = lubridate::year(date),
+         monthDate = lubridate::month(date)) %>% 
+  select(sex, meet_name, yearDate, monthDate, best3bench_kg, best3deadlift_kg, best3squat_kg) %>% 
+  gather(exercise, value, -c(sex, meet_name, yearDate, monthDate)) %>% 
+  mutate(exercise = case_when(exercise == "best3bench_kg" ~ "Bench Press",
+                              exercise == "best3deadlift_kg" ~ "Dead Lift",
+                              exercise == "best3squat_kg" ~ "Squat",
+                              TRUE ~ exercise)
+         ) %>% 
+  # group_by(sex, meet_name, yearDate, monthDate, exercise) %>% 
+  # group_by(sex, yearDate, monthDate, exercise) %>% 
+  group_by(sex, yearDate, exercise) %>% 
+  summarise(medValue = median(value, na.rm=TRUE),
+            meanValue = mean(value, na.rm=TRUE),
+            sdValue = sd(value, na.rm=TRUE),
+            numMeasurements = n()
+  ) %>% 
+  ungroup() %>% 
+  arrange(exercise, yearDate) %>% 
+  # mutate(approxDate = as.Date(paste0(yearDate, "-", monthDate, "-", "01"), "%Y-%m-%d")) %>% # View()
+  ggplot(.) +
+  geom_line(aes(yearDate, medValue, col = exercise)) +
+  geom_point(aes(yearDate, medValue, col = exercise)) +
+  geom_smooth(aes(yearDate, medValue, col = exercise)) +
+  facet_grid(exercise~sex) +
+  labs(title = "Changes of Yearly Median Performance Over Time",
+       subtitle = "Facetted by Sex and Exercise",
+       x = "Year",
+       y = "Median Value (kg)")
