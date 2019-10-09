@@ -34,3 +34,4 @@ print(size_df, units = "MB")
 #   write_csv(here::here("2019", "2019-10-08","ipf_lifts.csv"))
 ipf_data %>% 
   write_csv(here::here('data', 'ipf_lifts.csv'))
+saveRDS(object = ipf_data, file = here::here('data', 'ipf_lifts.rds'))
